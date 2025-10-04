@@ -1,6 +1,7 @@
 # Reconnaissance
 
 ## UDP scan — nmap (ports 1–9000)
+``` ```bash```````
 nmap -p1-9000 -Pn -sU -sV 10.10.11.87 -oA basic
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-10-04 18:30 IST
 Stats: 0:32:56 elapsed; 0 hosts completed (1 up), 1 undergoing UDP Scan
@@ -26,10 +27,7 @@ SF:xb7\xd5n\xbc\xe8\x85%\xe7\xde\x7f\0\xd6\xc2\xd3\x80\0\0\0\0\0\0\x14\x90
 SF:\xcb\x80\x91>\xbbin\x08c\x81\xb5\xecB{\x1f");
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 9896.21 seconds
-
-yaml
-Copy code
+Nmap done: 1 IP address (1 host up) scanned in 9896.21 seconds ``` ``` ```
 
 ---
 
