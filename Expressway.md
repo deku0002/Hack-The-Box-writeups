@@ -27,7 +27,7 @@ SF:\xcb\x80\x91>\xbbin\x08c\x81\xb5\xecB{\x1f");
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 9896.21 seconds```
 
-### the nmap result for udp port scan gives two unfiltered open ports
+## the nmap result for udp port scan gives two unfiltered open ports
 ### **Note:** Port **500/udp (ISAKMP/IKE)** is open and **needs to be studied further** (use `ike-scan`, `nmap --script=ike-version`, and packet captures).
 
 # Recommended commands for deeper analysis of port 500
