@@ -1,17 +1,20 @@
-# Reconnaissance
+# Reconnaissance — 10.10.11.87
+
+---
 
 ## UDP scan — nmap (ports 1–9000)
-```
+
+```text
 nmap -p1-9000 -Pn -sU -sV 10.10.11.87 -oA basic
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-10-04 18:30 IST
 Stats: 0:32:56 elapsed; 0 hosts completed (1 up), 1 undergoing UDP Scan
 Nmap scan report for 10.10.11.87
 Host is up (0.39s latency).
 Not shown: 8993 closed udp ports (port-unreach)
-PORT STATE SERVICE VERSION
-68/udp open|filtered dhcpc
-69/udp open tftp Netkit tftpd or atftpd
-500/udp open isakmp?
+PORT     STATE         SERVICE       VERSION
+68/udp   open|filtered dhcpc
+69/udp   open          tftp          Netkit tftpd or atftpd
+500/udp  open          isakmp?
 4007/udp open|filtered pxc-splr
 4401/udp open|filtered ds-srvr
 4500/udp open|filtered nat-t-ike
@@ -27,70 +30,85 @@ SF:xb7\xd5n\xbc\xe8\x85%\xe7\xde\x7f\0\xd6\xc2\xd3\x80\0\0\0\0\0\0\x14\x90
 SF:\xcb\x80\x91>\xbbin\x08c\x81\xb5\xecB{\x1f");
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 9896.21 seconds 
+Nmap done: 1 IP address (1 host up) scanned in 9896.21 seconds
 ```
 
 ---
 
 ## Quick findings
-- **Open (definitive):**
-  - `69/udp` — **tftp** (Netkit tftpd / atftpd)  
-  - `500/udp` — **isakmp? (IKE)** ← **REQUIRES FURTHER STUDY**
 
-- **Open|filtered (ambiguous):**
-  - `68/udp` (dhcpc), `4007/udp`, `4401/udp`, `4500/udp` (nat-t-ike), `5424/udp`  
-  These ports returned no definitive reply — could be listening services that don't respond to probes, or dropped by a firewall. UDP scans are often ambiguous.
+* **Open (definitive):**
+
+  * `69/udp` — **tftp** (Netkit tftpd / atftpd)
+  * `500/udp` — **isakmp? (IKE)** ← **REQUIRES FURTHER STUDY**
+
+* **Open|filtered (ambiguous):**
+
+  * `68/udp` (dhcpc), `4007/udp`, `4401/udp`, `4500/udp` (nat-t-ike), `5424/udp`
+
+These ports returned no definitive reply — they may be listening services that don't respond to probes, or probes may be dropped by a firewall. UDP scans are often ambiguous and should be followed up with targeted probes and captures.
 
 ---
 
 ## Notes on port 500 (ISAKMP / IKE)
-Port **500/udp** likely indicates an IPsec/IKE endpoint (VPN). This is a potentially valuable service to fingerprint because:
-- IKE responses can reveal vendor and version (helps search for CVEs or default configurations).
-- Misconfiguration (weak PSKs, aggressive mode, weak proposals) can lead to exploitable conditions or information disclosure.
-- IKE exchanges are best analyzed with dedicated tools and packet captures.
 
-**Conclusion:** `500/udp` **needs to be studied further** (fingerprinting + capture) before determining next steps.
+Port **500/udp** likely indicates an IPsec/IKE endpoint (VPN). This service is high-value for enumeration because:
+
+* IKE responses can reveal vendor and version (useful to search for CVEs or default configurations).
+* Misconfigurations (weak PSKs, aggressive mode, weak proposals) can lead to information disclosure or exploitable conditions.
+* IKE exchanges are best analyzed with dedicated tools (`ike-scan`) and packet captures (Wireshark/TCPDump).
+
+**Conclusion:** `500/udp` **needs to be studied further** (fingerprinting + capture) before determining targeted exploitation steps.
 
 ---
 
 ## Recommended commands (to run & cite)
 
 ### 1) Nmap IKE scripts
+
 ```bash
 nmap -sU -p 500 --script=ike-version,ike-probe -Pn 10.10.11.87
-2) ike-scan (fingerprinting)
-bash
-Copy code
+```
+
+### 2) ike-scan (fingerprinting)
+
+```bash
 ike-scan -A 10.10.11.87
-3) TFTP enumeration (port 69)
-bash
-Copy code
+```
+
+### 3) TFTP enumeration (port 69)
+
+```bash
 nmap -sU -p 69 --script=tftp-enum,tftp-read -Pn 10.10.11.87
 
 # manual client
+# tftp client example (interactive)
 tftp 10.10.11.87
-tftp> mode binary
-tftp> get pxelinux.cfg/default
-tftp> quit
-4) Packet capture while probing (recommended for IKE)
-bash
-Copy code
+# then inside tftp: mode binary / get pxelinux.cfg/default / quit
+```
+
+### 4) Packet capture while probing (recommended for IKE)
+
+```bash
 sudo tcpdump -i eth0 host 10.10.11.87 and udp port 500 -w ike_probe.pcap
 # run ike-scan / nmap probes while capturing, then inspect ike_probe.pcap in Wireshark
-Next steps / checklist
- Run ike-scan -A to identify vendor / proposals.
+```
 
- Run nmap --script=ike-version,ike-probe and save output.
+---
 
- Capture IKE traffic with tcpdump / Wireshark while probing.
+## Next steps / checklist
 
- Enumerate TFTP for readable files (pxelinux, configs, firmware).
+* [ ] Run `ike-scan -A` to identify vendor / proposals.
+* [ ] Run `nmap --script=ike-version,ike-probe` and save output.
+* [ ] Capture IKE traffic with `tcpdump` / Wireshark while probing.
+* [ ] Enumerate TFTP for readable files (pxelinux, configs, firmware).
+* [ ] Search vendor/version for known CVEs or default credentials.
+* [ ] Document findings and proceed to targeted exploitation only after confirming an actionable issue.
 
- Search vendor/version for known CVEs or default creds.
+---
 
- Document findings and proceed to targeted exploitation only after confirming an actionable issue.
+## Suggested short line for the Recon section (one-liner)
 
-Suggested short line for the Recon section (one-liner)
-markdown
-Copy code
+```markdown
 **Note:** Port **500/udp (ISAKMP/IKE)** is open and **needs further analysis** (use `ike-scan`, `nmap --script=ike-version`, and packet captures).
+```
